@@ -5,18 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ZenChain • Simple DEX (Testnet)</title>
 
-  <!-- Ethers v6 UMD + fallback (fix 'ethers is not defined') -->
+  <!-- Ethers v6 (UMD) with CDN fallback -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"
           onerror="var s=document.createElement('script');s.src='https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js';document.head.appendChild(s);">
   </script>
 
   <style>
     :root{
-      --bg:#060a14; --bg2:#0a1327;
-      --card:#0f1a38; --stroke:#1f2d59;
-      --fg:#e8eeff; --muted:#a8b3d8;
-      --pri:#67b8ff; --pri2:#7cffcf;
-      --ok:#1ec28b; --warn:#ffb454; --err:#ff5a71;
+      --bg:#060a14; --bg2:#0a1327; --card:#0f1a38; --stroke:#1f2d59;
+      --fg:#e8eeff; --muted:#a8b3d8; --pri:#67b8ff; --ok:#1ec28b; --warn:#ffb454; --err:#ff5a71;
     }
     *{box-sizing:border-box}
     body{
@@ -31,13 +28,7 @@
     .wrap{max-width:1060px;margin:40px auto;padding:0 18px}
     header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
     .brand{display:flex;gap:14px;align-items:center}
-    .logo{
-      width:52px;height:52px;border-radius:16px;overflow:hidden;
-      background:linear-gradient(180deg,#0b1224,#0a1327);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow:0 12px 40px rgba(124,255,207,.22);
-      display:grid;place-items:center;
-    }
+    .logo{width:52px;height:52px;border-radius:16px;overflow:hidden;background:#0b1224;border:1px solid rgba(255,255,255,.06);box-shadow:0 12px 40px rgba(124,255,207,.22);display:grid;place-items:center}
     .logo img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 6px 22px rgba(124,255,207,.35))}
     h1{font-size:28px;margin:0}
     .muted{color:var(--muted);font-size:14px}
@@ -50,21 +41,21 @@
     }
     .row{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
     input,button{
-      border-radius:12px;border:1px solid var(--stroke);outline:none;
-      background:#0b1533;color:var(--fg);padding:10px 12px;
+      border-radius:12px;border:1px solid var(--stroke);outline:none;background:#0b1533;color:var(--fg);padding:10px 12px;
     }
     input{min-width:220px;flex:1}
     .mono{font-family:ui-monospace, Menlo, Consolas, monospace; font-size:13px}
+
     button{
-      background:linear-gradient(180deg,#3a6df3,#2f58d7); color:#fff; border:0; cursor:pointer;
-      padding:10px 14px; transition:transform .06s ease, filter .2s ease;
-      box-shadow:0 8px 28px rgba(58,109,243,.35)
+      background:linear-gradient(180deg,#3a6df3,#2f58d7);
+      color:#fff;border:0;cursor:pointer;padding:10px 14px;
+      transition:transform .06s ease,filter .2s ease; box-shadow:0 8px 28px rgba(58,109,243,.35)
     }
     button:hover{filter:brightness(1.08)} button:active{transform:translateY(1px)}
     button.ghost{background:#1a2650; box-shadow:none}
     button.ok{background:linear-gradient(180deg,#1ec28b,#18a875); box-shadow:0 8px 28px rgba(30,194,139,.35)}
-    button.warn{background:linear-gradient(180deg,#ffb454,#ff9645)}
-    button:disabled{opacity:.6; cursor:not-allowed}
+    button.connected{background:linear-gradient(180deg,#1ec28b,#18a875); box-shadow:0 8px 28px rgba(30,194,139,.35)}
+    button:disabled{opacity:.65; cursor:not-allowed}
 
     .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#0b1533;border:1px solid var(--stroke);font-size:13px}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -82,8 +73,9 @@
     <header>
       <div class="brand">
         <div class="logo">
-          <!-- put your logo file in repo root as 'zenchain-logo.png' -->
-          <img src="./zenchain-logo.png" alt="ZenChain logo" onerror="this.style.display='none'">
+          <!-- Try .png then fallback to .jpg -->
+          <img src="./zenchain-logo.png" alt="ZenChain logo"
+               onerror="if(this.src.endsWith('.png')){this.src='./zenchain-logo.jpg'}else{this.style.display='none'}">
         </div>
         <div>
           <h1>ZenChain Simple DEX — Testnet</h1>
@@ -97,7 +89,7 @@
 
     <div class="card">
       <div class="row">
-        <!-- Pre-filled with your deployed contracts -->
+        <!-- Prefilled with your deployed contracts -->
         <input id="dexAddr" class="mono" value="0x890a45b0726399552dd88A9c267532d9dd97eC92" placeholder="DEX contract address"/>
         <input id="tknAddr" class="mono" value="0x363EF5235fFD8bf04834e043B8d09e713996cF65" placeholder="Token (TKN) contract address"/>
         <button id="saveAddr" class="ghost">Save Addresses</button>
@@ -122,7 +114,7 @@
         <input id="approveAmt" placeholder="Amount in TKN (e.g. 1000)"/>
         <button id="approveBtn">Approve</button>
       </div>
-      <div class="muted tiny">Approval is a <b>VALUE = 0</b> transaction. TKN is assumed 18 decimals.</div>
+      <div class="muted tiny">Approval is a <b>VALUE = 0</b> transaction. TKN uses 18 decimals.</div>
     </div>
 
     <div class="card">
@@ -145,16 +137,35 @@
         <input id="swapTKN" placeholder="TKN → ZTC amount (e.g. 10)"/>
         <button id="swapT2Z" class="ok">Swap TKN → ZTC</button>
       </div>
-      <div class="muted tiny">ZTC→TKN requires VALUE &gt; 0; TKN→ZTC requires VALUE = 0 and sufficient allowance.</div>
+      <div class="muted tiny">ZTC→TKN requires VALUE &gt; 0; TKN→ZTC requires VALUE = 0 and enough allowance.</div>
     </div>
 
     <div class="card"><b>Activity</b><div id="log" class="mono"></div></div>
   </div>
 
 <script>
-/* ---------- utilities ---------- */
-const log=(m,cls="")=>{const el=document.getElementById("log");const d=document.createElement("div");d.innerHTML=m;if(cls)d.classList.add(cls);el.prepend(d)};
+/* ---------- helpers ---------- */
+const log=(m, cls="")=>{
+  const el=document.getElementById("log");
+  const d=document.createElement("div"); d.innerHTML=m;
+  if(cls) d.classList.add(cls);
+  el.prepend(d);
+};
 const fmt=(n,dec=6)=>Number(n).toLocaleString(undefined,{maximumFractionDigits:dec});
+function setConnectUI(connected, addr="") {
+  const btn=document.getElementById("connectBtn");
+  if(connected){
+    btn.textContent="✅ Connected";
+    btn.classList.add("connected");
+    btn.disabled=true;
+    document.getElementById("acct").textContent=`account: ${addr}`;
+  }else{
+    btn.textContent="🦊 Connect Wallet";
+    btn.classList.remove("connected");
+    btn.disabled=false;
+    document.getElementById("acct").textContent="account: not connected";
+  }
+}
 
 /* ---------- ABIs ---------- */
 const DEX_ABI=[
@@ -180,6 +191,7 @@ let TKN_ADDRESS = localStorage.getItem("tkn") || document.getElementById("tknAdd
 document.getElementById("dexAddr").value=DEX_ADDRESS;
 document.getElementById("tknAddr").value=TKN_ADDRESS;
 
+/* ---------- connect & network ---------- */
 async function ensureZenChain(){
   const zen={ chainId:"0x20D8", chainName:"ZenChain Testnet",
     nativeCurrency:{name:"ZenCoin",symbol:"ZTC",decimals:18},
@@ -188,53 +200,76 @@ async function ensureZenChain(){
   try{
     await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId: zen.chainId }] });
   }catch(e){
-    if(e.code===4902){
-      await window.ethereum.request({ method:"wallet_addEthereumChain", params:[zen] });
-    }else{ throw e; }
+    if(e.code===4902){ await window.ethereum.request({ method:"wallet_addEthereumChain", params:[zen] }); }
+    else throw e;
   }
 }
 
 async function connect(){
   try{
-    if(typeof ethers==='undefined'){ throw new Error('Ethers failed to load. Hard refresh or check CDN.'); }
+    if(typeof ethers==='undefined') throw new Error("Ethers failed to load. Hard refresh.");
     if(!window.ethereum){ alert("Please install MetaMask."); return; }
+
     provider=new ethers.BrowserProvider(window.ethereum);
     await ensureZenChain();
     await provider.send("eth_requestAccounts",[]);
     signer=await provider.getSigner();
-    const me=await signer.getAddress(); const net=await provider.getNetwork();
-    document.getElementById("acct").innerText=`account: ${me}`;
-    document.getElementById("net").innerText =`network: ${Number(net.chainId)}`;
-    await initContracts(); await refreshBalances();
+
+    const me=await signer.getAddress();
+    const net=await provider.getNetwork();
+    document.getElementById("net").textContent=`network: ${Number(net.chainId)}`;
+    setConnectUI(true, me);
+
+    await initContracts();
+    await refreshBalances();
     log("✅ Wallet connected.","oktxt");
-  }catch(err){ log("❌ Connect failed: "+(err?.message||err),"errtxt"); }
+
+    // react to account / network changes
+    window.ethereum.removeAllListeners?.("accountsChanged");
+    window.ethereum.removeAllListeners?.("chainChanged");
+    window.ethereum.on("accountsChanged", async(accs)=>{
+      if(!accs.length){ setConnectUI(false); return; }
+      setConnectUI(true, accs[0]); await refreshBalances();
+    });
+    window.ethereum.on("chainChanged", ()=>location.reload());
+  }catch(err){
+    setConnectUI(false);
+    log("❌ Connect failed: " + (err?.message || err), "errtxt");
+  }
 }
 
+/* ---------- contracts & balances ---------- */
 async function initContracts(){
   dex=new ethers.Contract(DEX_ADDRESS, DEX_ABI, signer);
   tkn=new ethers.Contract(TKN_ADDRESS, TKN_ABI, signer);
   try{ tknDecimals=await tkn.decimals(); tknSymbol=await tkn.symbol(); }catch{}
 }
-
 async function refreshBalances(){
   try{
     const me=await signer.getAddress();
-    const [balZ, balT, alw, rZ, rT] = await Promise.all([
+    const [balZ,balT,alw,rZ,rT]=await Promise.all([
       provider.getBalance(me),
       tkn.balanceOf(me),
       tkn.allowance(me, DEX_ADDRESS),
       dex.reserveZTC(),
-      dex.reserveToken()
+      dex.reserveToken(),
     ]);
     document.getElementById("balZTC").innerText = fmt(ethers.formatEther(balZ));
-    document.getElementById("balTKN").innerText = fmt(ethers.formatUnits(balT, tknDecimals));
-    document.getElementById("allow").innerText  = fmt(ethers.formatUnits(alw, tknDecimals));
+    document.getElementById("balTKN").innerText = fmt(ethers.formatUnits(balT,tknDecimals));
+    document.getElementById("allow").innerText  = fmt(ethers.formatUnits(alw,tknDecimals));
     document.getElementById("rZTC").innerText   = fmt(ethers.formatEther(rZ));
-    document.getElementById("rTKN").innerText   = fmt(ethers.formatUnits(rT, tknDecimals));
+    document.getElementById("rTKN").innerText   = fmt(ethers.formatUnits(rT,tknDecimals));
   }catch(err){ log("⚠️ Could not fetch balances: "+(err?.message||err),"warnxt"); }
 }
 
+/* ---------- actions ---------- */
+function requireConnected(){
+  if(!signer){ log("⚠️ Please connect wallet first.","warnxt"); return false; }
+  return true;
+}
+
 async function doApprove(){
+  if(!requireConnected()) return;
   try{
     const n=(document.getElementById("approveAmt").value||"1000").trim();
     const amt=ethers.parseUnits(n, tknDecimals);
@@ -245,6 +280,7 @@ async function doApprove(){
 }
 
 async function addLiquidity(){
+  if(!requireConnected()) return;
   try{
     const z=(document.getElementById("liqZTC").value||"0.1").trim();
     const t=(document.getElementById("liqTKN").value||"100").trim();
@@ -255,24 +291,31 @@ async function addLiquidity(){
 }
 
 async function swapZ2T(){
+  if(!requireConnected()) return;
   try{
     const z=(document.getElementById("swapZTC").value||"0.01").trim();
     const tx=await dex.swapZTCforToken({ value: ethers.parseEther(z) });
-    log(`⏳ Swap ZTC→${tknSymbol}: <a href="https://zentrace.io/tx/${tx.hash}" target="_blank">view tx</a>`);
+    log(`⏳ Swap ZTC→TKN: <a href="https://zentrace.io/tx/${tx.hash}" target="_blank">view tx</a>`);
     await tx.wait(); log("✅ Swap ZTC→TKN confirmed.","oktxt"); await refreshBalances();
   }catch(err){ log("❌ Swap ZTC→TKN failed: "+(err?.shortMessage||err?.message||err),"errtxt"); }
 }
 
 async function swapT2Z(){
+  if(!requireConnected()) return;
   try{
     const t=(document.getElementById("swapTKN").value||"10").trim();
-    const tx=await dex.swapTokenForZTC(ethers.parseUnits(t, tknDecimals)); // VALUE = 0
-    log(`⏳ Swap ${tknSymbol}→ZTC: <a href="https://zentrace.io/tx/${tx.hash}" target="_blank">view tx</a>`);
+    // Optional allowance check: warn if not enough
+    const alw = await tkn.allowance(await signer.getAddress(), DEX_ADDRESS);
+    const need = ethers.parseUnits(t, tknDecimals);
+    if (alw < need) log("⚠️ Allowance may be insufficient — consider Approve a larger amount.", "warnxt");
+
+    const tx=await dex.swapTokenForZTC(need); // VALUE must be 0
+    log(`⏳ Swap TKN→ZTC: <a href="https://zentrace.io/tx/${tx.hash}" target="_blank">view tx</a>`);
     await tx.wait(); log("✅ Swap TKN→ZTC confirmed.","oktxt"); await refreshBalances();
   }catch(err){ log("❌ Swap TKN→ZTC failed: "+(err?.shortMessage||err?.message||err),"errtxt"); }
 }
 
-/* wiring */
+/* ---------- wiring ---------- */
 document.getElementById("connectBtn").onclick=connect;
 document.getElementById("approveBtn").onclick=doApprove;
 document.getElementById("addLiqBtn").onclick=addLiquidity;
@@ -281,14 +324,19 @@ document.getElementById("swapT2Z").onclick=swapT2Z;
 document.getElementById("saveAddr").onclick=()=>{
   DEX_ADDRESS=document.getElementById("dexAddr").value.trim();
   TKN_ADDRESS=document.getElementById("tknAddr").value.trim();
-  localStorage.setItem("dex",DEX_ADDRESS); localStorage.setItem("tkn",TKN_ADDRESS);
-  log("Addresses saved. Reinitializing…"); if (typeof signer!=='undefined') initContracts().then(refreshBalances);
+  localStorage.setItem("dex", DEX_ADDRESS);
+  localStorage.setItem("tkn", TKN_ADDRESS);
+  log("Addresses saved. Reinitializing…");
+  if (typeof signer!=='undefined') initContracts().then(refreshBalances);
 };
 
-/* auto-connect if already authorized */
-(async()=>{
+/* Auto-connect if already authorized */
+(async ()=>{
   if(window.ethereum){
-    try{ const a=await window.ethereum.request({method:"eth_accounts"}); if(a?.length){ await connect(); } }catch{}
+    try{
+      const accs = await window.ethereum.request({ method:"eth_accounts" });
+      if (accs?.length) await connect();
+    }catch{}
   }
 })();
 </script>
